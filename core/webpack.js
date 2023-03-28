@@ -3,7 +3,7 @@ import { Compiler } from "./compiler";
 function webpack(options) {
   // 合并参数 得到合并后的参数 mergeOptions
   const mergeOptions = _mergeOptions(options);
-
+  // 创建Compiler对象
   const compiler = new Compiler(mergeOptions);
 
   return compiler;
