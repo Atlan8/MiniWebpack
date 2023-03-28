@@ -5,6 +5,8 @@ function webpack(options) {
   const mergeOptions = _mergeOptions(options);
   // 创建Compiler对象
   const compiler = new Compiler(mergeOptions);
+  // 加载插件
+  _loadPlugin(options.plugins, compiler);
 
   return compiler;
 }
@@ -21,6 +23,15 @@ function _mergeOptions(options) {
     return option;
   }, {});
   return { ...options, ...shellOptions };
+}
+
+// 加载插件函数
+function _loadPlugin(plugins, compiler) {
+  if (plugins && Array.isArray(plugins)) {
+    plugins.forEach((plugin) => {
+      plugin.apply(compiler);
+    });
+  }
 }
 
 module.exports = webpack;
