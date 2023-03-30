@@ -36,6 +36,21 @@ class Compiler {
     const entry = this.getEntry();
   }
 
+  //
+  buildEntryModule(entry) {
+    Object.keys(entry).forEach((entryName) => {
+      const entryPath = entry[entryName];
+      const entryObj = this.buildModule(entryName, entryPath);
+      this.entries.add(entryObj);
+    });
+  }
+
+  //
+  buildModule(moduleName, modulePath) {
+    //
+    return {};
+  }
+
   // 获取入口文件路径
   getEntry() {
     let entry = Object.create(null);
