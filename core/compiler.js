@@ -1,3 +1,4 @@
+import { readFileSync } from "fs";
 import { SyncHook } from "tapable";
 const { toUnixPath } = require("./utils");
 
@@ -36,7 +37,11 @@ class Compiler {
     const entry = this.getEntry();
   }
 
-  //
+  /**
+   * 入口模块编译方法
+   * 循环入口对象，得到每一个入口对象的名称和路径
+   * @param {*} entry
+   */
   buildEntryModule(entry) {
     Object.keys(entry).forEach((entryName) => {
       const entryPath = entry[entryName];
@@ -45,9 +50,16 @@ class Compiler {
     });
   }
 
-  //
+  /**
+   * 模块编译方法
+   * @param {*} moduleName
+   * @param {*} modulePath
+   * @returns 编译入口文件之后的对象
+   */
   buildModule(moduleName, modulePath) {
-    //
+    // 1. 读取文件原始代码
+    const originSourceCode = (this.originSourceCode = readFileSync(modulePath, "utf-8"));
+    this.moduleCode = originSourceCode;
     return {};
   }
 
