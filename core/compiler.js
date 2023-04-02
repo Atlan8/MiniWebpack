@@ -1,6 +1,11 @@
 import { readFileSync } from "fs";
 import { SyncHook } from "tapable";
 const { toUnixPath } = require("./utils");
+const parser = require("@/babel/parser");
+const traverse = require("@babel/traverse").default;
+const generator = require("@babel/generator").default;
+const t = require("@babel/types");
+const tryExtensions = require("./utils/index");
 
 class Compiler {
   constructor(options) {
@@ -62,7 +67,10 @@ class Compiler {
     this.moduleCode = originSourceCode;
     // 2. 调用loader进行处理
     this.handleLoader(modulePath);
-    return {};
+    // 3. 调用webpack进行模块编译 获得最终的module对象
+    const module = this.handleWebpackCompiler(moduleName, modulePath);
+    // 4. 返回对应module
+    return module;
   }
 
   /**
@@ -94,6 +102,54 @@ class Compiler {
         this.moduleCode = loaderFn(this.moduleCode);
       }
     });
+  }
+
+  /**
+   * 调用webpack进行模块编译
+   * @param {*} moduleName
+   * @param {*} modulePath
+   */
+  handleWebpackCompiler(moduleName, modulePath) {
+    // 将当前模块相对于项目启动根目录计算出相对路径，作为模块id
+    const moduleId = `./${path.posix.relative(this.rootPath, modulePath)}`;
+    // 创建模块对象
+    const module = {
+      id: moduleId,
+      dependencies: new Set(), // 该模块所依赖的模块绝对路径地址
+      name: [moduleName], // 该模块所属的入口文件
+    };
+    // 调用babel分析我们的代码
+    const ast = parser.parser(this.moduleCode, {
+      sourceType: "module",
+    });
+    // 深度优先 遍历语法树
+    traverse(ast, {
+      // 当遇到require语句时
+      CallExpression: (nodePath) => {
+        const node = nodePath.node;
+        if (node.callee.name === "require") {
+          // 获得源代码中引入的模块相对路径
+          const requirePath = node.arguments[0].value;
+          // 寻找模块绝对路径 当前模块路径+require()相对路径
+          const moduleDirName = path.posix.dirname(modulePath);
+          const absolutePath = tryExtensions(path.posix.join(moduleDirName, requirePath), this.options.resolve.extensions, requirePath, moduleDirName);
+          // 生成moduleId - 针对根路径的模块id 添加进入新的依赖模块路径
+          const moduleId = `./${path.posix.relative(this.rootPath, absolutePath)}`;
+          // 通过babel修改源代码中的require变成__webpack_require__语句
+          node.callee = t.identifier("__webpack_require__");
+          // 修改源代码中require语句引入的模块 全部修改为相对路径来处理
+          node.arguments = [t.stringLiteral(moduleId)];
+          // 为当前模块添加require语句造成的依赖（内容为相对于根路径的模块id）
+          module.dependencies.add(moduleId);
+        }
+      },
+    });
+    // 遍历结束根据AST生成新的代码
+    const { code } = generator(ast);
+    // 为当前模块挂载新生成的代码
+    module._source = code;
+    // 返回当前模块对象
+    return module;
   }
 
   // 获取入口文件路径
