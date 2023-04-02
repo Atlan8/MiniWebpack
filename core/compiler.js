@@ -45,6 +45,30 @@ class Compiler {
   }
 
   /**
+   * 获取入口文件路径
+   * @returns
+   */
+  getEntry() {
+    let entry = Object.create(null);
+    const { entry: optionsEntry } = this.options;
+    if (typeof optionsEntry === "string") {
+      entry["main"] = optionsEntry;
+    } else {
+      entry = optionsEntry;
+    }
+
+    // 将entry变成绝对路径
+    Object.keys(entry).forEach((key) => {
+      const value = entry[key];
+      if (!path.isAbsolute(value)) {
+        // 转化为绝对路径的同时，将分隔符转换成 /
+        entry[key] = toUnixPath(path.join(this.rootPath, value));
+      }
+    });
+    return entry;
+  }
+
+  /**
    * 入口模块编译方法
    * 循环入口对象，得到每一个入口对象的名称和路径
    * @param {*} entry
@@ -56,6 +80,7 @@ class Compiler {
       this.entries.add(entryObj);
     });
     console.log(this.entries, "entries");
+    console.log(this.modules, "modules");
   }
 
   /**
@@ -143,8 +168,19 @@ class Compiler {
           node.callee = t.identifier("__webpack_require__");
           // 修改源代码中require语句引入的模块 全部修改为相对路径来处理
           node.arguments = [t.stringLiteral(moduleId)];
-          // 为当前模块添加require语句造成的依赖（内容为相对于根路径的模块id）
-          module.dependencies.add(moduleId);
+          //
+          const alreadyModules = Array.from(_this.modules).map((i) => i.id);
+          if (!alreadyModules.includes(moduleId)) {
+            // 为当前模块添加require语句造成的依赖（内容为相对于根路径的模块id）
+            module.dependencies.add(moduleId);
+          } else {
+            //
+            this.modules.forEach((value) => {
+              if (value.id === moduleId) {
+                value.name.push(moduleName);
+              }
+            });
+          }
         }
       },
     });
@@ -152,29 +188,14 @@ class Compiler {
     const { code } = generator(ast);
     // 为当前模块挂载新生成的代码
     module._source = code;
+    // 递归深度遍历依赖，存在依赖则添加到this.modules
+    module.dependencies.forEach((dependency) => {
+      const depModule = _this.buildModule(moduleName, dependency);
+      // 将编译后的所有依赖模块对象添加到modules对象中
+      this.modules.add(depModule);
+    });
     // 返回当前模块对象
     return module;
-  }
-
-  // 获取入口文件路径
-  getEntry() {
-    let entry = Object.create(null);
-    const { entry: optionsEntry } = this.options;
-    if (typeof optionsEntry === "string") {
-      entry["main"] = optionsEntry;
-    } else {
-      entry = optionsEntry;
-    }
-
-    // 将entry变成绝对路径
-    Object.keys(entry).forEach((key) => {
-      const value = entry[key];
-      if (!path.isAbsolute(value)) {
-        // 转化为绝对路径的同时，将分隔符转换成 /
-        entry[key] = toUnixPath(path.join(this.rootPath, value));
-      }
-    });
-    return entry;
   }
 }
 
