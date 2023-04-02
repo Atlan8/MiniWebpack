@@ -18,6 +18,7 @@ function toUnixPath(path) {
  * @returns
  */
 function tryExtensions(modulePath, extensions, originModulePath, moduleContext) {
+  // console.log(`tryExtensions: ${modulePath}, ${extensions} ${originModulePath}  ${moduleContext}`);
   // 优先尝试不需要扩展名选项
   extensions.unshift("");
   for (let extension of extensions) {
@@ -28,3 +29,8 @@ function tryExtensions(modulePath, extensions, originModulePath, moduleContext) 
   // 未匹配对应文件
   throw new Error(`No module, Error: Can't resolve ${originModulePath} in ${moduleContext}`);
 }
+
+module.exports = {
+  toUnixPath,
+  tryExtensions,
+};

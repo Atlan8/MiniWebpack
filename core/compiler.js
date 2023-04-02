@@ -1,11 +1,10 @@
 const { readFileSync } = require("fs");
 const { SyncHook } = require("tapable");
-const { toUnixPath } = require("./utils");
+const { toUnixPath, tryExtensions } = require("./utils");
 const parser = require("@babel/parser");
 const traverse = require("@babel/traverse").default;
 const generator = require("@babel/generator").default;
 const t = require("@babel/types");
-const tryExtensions = require("./utils/index");
 const path = require("path");
 
 class Compiler {
@@ -114,6 +113,7 @@ class Compiler {
    * @param {*} modulePath
    */
   handleWebpackCompiler(moduleName, modulePath) {
+    const _this = this;
     // 将当前模块相对于项目启动根目录计算出相对路径，作为模块id
     const moduleId = `./${path.posix.relative(this.rootPath, modulePath)}`;
     // 创建模块对象
@@ -136,9 +136,9 @@ class Compiler {
           const requirePath = node.arguments[0].value;
           // 寻找模块绝对路径 当前模块路径+require()相对路径
           const moduleDirName = path.posix.dirname(modulePath);
-          const absolutePath = tryExtensions(path.posix.join(moduleDirName, requirePath), this.options.resolve.extensions, requirePath, moduleDirName);
+          const absolutePath = tryExtensions(path.posix.join(moduleDirName, requirePath), _this.options.resolve.extensions, requirePath, moduleDirName);
           // 生成moduleId - 针对根路径的模块id 添加进入新的依赖模块路径
-          const moduleId = `./${path.posix.relative(this.rootPath, absolutePath)}`;
+          const moduleId = `./${path.posix.relative(_this.rootPath, absolutePath)}`;
           // 通过babel修改源代码中的require变成__webpack_require__语句
           node.callee = t.identifier("__webpack_require__");
           // 修改源代码中require语句引入的模块 全部修改为相对路径来处理

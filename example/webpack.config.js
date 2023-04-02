@@ -21,7 +21,7 @@ module.exports = {
   },
   plugins: [new PluginA(), new PluginB()],
   resolve: {
-    extensions: ["js", ".ts"],
+    extensions: [".js", ".ts"],
   },
   module: {
     rules: [
