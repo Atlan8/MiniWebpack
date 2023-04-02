@@ -60,7 +60,40 @@ class Compiler {
     // 1. 读取文件原始代码
     const originSourceCode = (this.originSourceCode = readFileSync(modulePath, "utf-8"));
     this.moduleCode = originSourceCode;
+    // 2. 调用loader进行处理
+    this.handleLoader(modulePath);
     return {};
+  }
+
+  /**
+   * 匹配loader处理
+   * @param {*} modulePath
+   */
+  handleLoader(modulePath) {
+    const matchLoaders = [];
+    // 1. 获取所有传入的loader规则
+    const rules = this.options.module.rules;
+    rules.forEach((loader) => {
+      const testRule = loader.test;
+      if (testRule.test(modulePath)) {
+        if (loader.loader) {
+          // 仅考虑loader { test:/\.js$/g, use:['babel-loader'] }, { test:/\.js$/, loader:'babel-loader' }
+          matchLoaders.push(loader.loader);
+        } else {
+          matchLoaders.push(loader.use);
+        }
+      }
+      // 2. 倒序执行loader传入源代码
+      for (let i = matchLoaders.length - 1; i >= 0; i--) {
+        /**
+         * 目前我们仅支持传入绝对路径的loader模式
+         * require
+         */
+        const loaderFn = require(matchLoaders[i]);
+        //
+        this.moduleCode = loaderFn(this.moduleCode);
+      }
+    });
   }
 
   // 获取入口文件路径
