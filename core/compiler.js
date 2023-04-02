@@ -6,6 +6,7 @@ const traverse = require("@babel/traverse").default;
 const generator = require("@babel/generator").default;
 const t = require("@babel/types");
 const path = require("path");
+const fs = require("fs");
 
 class Compiler {
   constructor(options) {
@@ -42,6 +43,8 @@ class Compiler {
     const entry = this.getEntry();
     // 编译入口文件
     this.buildEntryModule(entry);
+    // 导出列表，将每个chunk转化为单独的文件，添加到列表assets中
+    this.exportFile(callback);
   }
 
   /**
@@ -214,6 +217,47 @@ class Compiler {
     };
     // 将chunk添加到this.chunks中去
     this.chunks.add(chunk);
+  }
+
+  /**
+   * 将chunk添加到输出列表
+   * @param {*} callback
+   */
+  exportFile(callback) {
+    const _this = this;
+    const output = this.options.output;
+    // 根据chunks生成assets内容
+    this.chunks.forEach((chunk) => {
+      const parseFileName = output.filename.replace("[name]", chunk.name);
+      // assets中 { 'main.js': '生成的字符串代码...' }
+      this.assets[parseFileName] = getSourceCode(chunk);
+    });
+    // 调用 plugin emit钩子
+    this.hooks.emit.call();
+    // 判断目录是否存在，否则创建新目录
+    if (!fs.existsSync(output.path)) {
+      fs.mkdirSync(output.path);
+    }
+    // files中所有的文件名
+    this.files = Object.keys(this.assets);
+    // 将assets中的内容生成打包文件，写入文件系统中
+    Object.keys(this.assets).forEach((fileName) => {
+      const filePath = path.join(output.path, fileName);
+      fs.writeFileSync(filePath, this.assets[fileName]);
+    });
+    // 结束之后触发钩子
+    this.hooks.done.call();
+    callback(null, {
+      toJson: () => {
+        return {
+          entries: _this.entries,
+          modules: _this.modules,
+          files: _this.files,
+          chunks: _this.chunks,
+          assets: _this.assets,
+        };
+      },
+    });
   }
 }
 

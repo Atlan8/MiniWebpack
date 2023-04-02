@@ -1,4 +1,5 @@
 const webpack = require("./webpack");
+// const webpack = require("webpack");
 const config = require("../example/webpack.config");
 
 /**
