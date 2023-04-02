@@ -1,11 +1,12 @@
-import { readFileSync } from "fs";
-import { SyncHook } from "tapable";
+const { readFileSync } = require("fs");
+const { SyncHook } = require("tapable");
 const { toUnixPath } = require("./utils");
-const parser = require("@/babel/parser");
+const parser = require("@babel/parser");
 const traverse = require("@babel/traverse").default;
 const generator = require("@babel/generator").default;
 const t = require("@babel/types");
 const tryExtensions = require("./utils/index");
+const path = require("path");
 
 class Compiler {
   constructor(options) {
@@ -40,6 +41,8 @@ class Compiler {
     this.hooks.run.call();
     // 获取入口配置对象
     const entry = this.getEntry();
+    // 编译入口文件
+    this.buildEntryModule(entry);
   }
 
   /**
@@ -53,6 +56,7 @@ class Compiler {
       const entryObj = this.buildModule(entryName, entryPath);
       this.entries.add(entryObj);
     });
+    console.log(this.entries, "entries");
   }
 
   /**
@@ -88,7 +92,7 @@ class Compiler {
           // 仅考虑loader { test:/\.js$/g, use:['babel-loader'] }, { test:/\.js$/, loader:'babel-loader' }
           matchLoaders.push(loader.loader);
         } else {
-          matchLoaders.push(loader.use);
+          matchLoaders.push(...loader.use);
         }
       }
       // 2. 倒序执行loader传入源代码
@@ -119,7 +123,7 @@ class Compiler {
       name: [moduleName], // 该模块所属的入口文件
     };
     // 调用babel分析我们的代码
-    const ast = parser.parser(this.moduleCode, {
+    const ast = parser.parse(this.moduleCode, {
       sourceType: "module",
     });
     // 深度优先 遍历语法树

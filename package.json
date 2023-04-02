@@ -1,0 +1,27 @@
+{
+  "name": "webpack",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "example": "example"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Atlan8/MiniWebpack.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Atlan8/MiniWebpack/issues"
+  },
+  "homepage": "https://github.com/Atlan8/MiniWebpack#readme",
+  "dependencies": {
+    "@babel/parser": "^7.21.4",
+    "@babel/traverse": "^7.21.4",
+    "tapable": "^2.2.1"
+  }
+}

@@ -1,4 +1,5 @@
-import { Compiler } from "./compiler";
+// import { Compiler } from "./compiler";
+const Compiler = require("./compiler");
 
 function webpack(options) {
   // 合并参数 得到合并后的参数 mergeOptions
