@@ -78,9 +78,12 @@ class Compiler {
       const entryPath = entry[entryName];
       const entryObj = this.buildModule(entryName, entryPath);
       this.entries.add(entryObj);
+      // 根据当前入口文件和模块的相互依赖关系，组装一个包含当前入口所有依赖模块的chunk
+      this.buildUpChunk(entryName, entryObj);
     });
-    console.log(this.entries, "entries");
-    console.log(this.modules, "modules");
+    // console.log(this.entries, "entries");
+    // console.log(this.modules, "modules");
+    console.log(this.chunks, "chunks");
   }
 
   /**
@@ -196,6 +199,21 @@ class Compiler {
     });
     // 返回当前模块对象
     return module;
+  }
+
+  /**
+   * 根据入口文件和依赖模块组装chunk
+   * @param {*} entryName
+   * @param {*} entryObj
+   */
+  buildUpChunk(entryName, entryObj) {
+    const chunk = {
+      name: entryName, // 每一个入口文件作为一个chunk
+      entryModule: entryObj, // entry编译后的对象
+      modules: Array.from(this.modules).filter((i) => i.name.includes(entryName)), // 寻找所有与当前entry相关的module
+    };
+    // 将chunk添加到this.chunks中去
+    this.chunks.add(chunk);
   }
 }
 
