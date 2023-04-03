@@ -1,6 +1,6 @@
 const { readFileSync } = require("fs");
 const { SyncHook } = require("tapable");
-const { toUnixPath, tryExtensions } = require("./utils");
+const { toUnixPath, tryExtensions, getSourceCode } = require("./utils");
 const parser = require("@babel/parser");
 const traverse = require("@babel/traverse").default;
 const generator = require("@babel/generator").default;
@@ -45,6 +45,10 @@ class Compiler {
     this.buildEntryModule(entry);
     // 导出列表，将每个chunk转化为单独的文件，添加到列表assets中
     this.exportFile(callback);
+  }
+
+  close(callback) {
+    // todo
   }
 
   /**
